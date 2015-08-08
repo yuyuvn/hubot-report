@@ -1,6 +1,6 @@
 TIMEZONE = "Asia/Bangkok"
-QUITTING_TIME = if process.env.REPORT_TIME then process.env.REPORT_TIME else '0 0 18 * * 2-6'
-# QUITTING_TIME = '0 * * * * 2-6'
+QUITTING_TIME = if process.env.REPORT_TIME then process.env.REPORT_TIME else '0 0 18 * * 1-5'
+# QUITTING_TIME = '0 * * * * *'
 
 cronJob = require('cron').CronJob
 
@@ -26,7 +26,6 @@ module.exports = (robot) ->
 
 
   send_repot = ->
-    # send report
     today_task = parse_data brainGet("today"), (value) ->
       "  ・" + value.split("|")[1]
     problems = parse_data brainGet("problem"), (value) ->
@@ -117,6 +116,7 @@ module.exports = (robot) ->
         issue_num = m.match[1]
       if issue_num > 0
         brainRemoveId "today", issue_num
+        brainRemoveId "plan", issue_num
         brainAdd "today_added", issue_num
       else
         issue_num = pull_num
