@@ -110,10 +110,10 @@ module.exports = (robot) ->
       issue_num = -1
       if !isNaN(pull.head.ref)
         issue_num = pull.head.ref
-      else if pull.head.ref.match(/\#([0-9]+)/, m)
-        issue_num = m.match[1]
-      else if pull.body.match(/\#([0-9]+)/, m)
-        issue_num = m.match[1]
+      else if m = pull.head.ref.match(/\#([0-9]+)/)
+        issue_num = m[1]
+      else if m = pull.body.match(/\#([0-9]+)/)
+        issue_num = m[1]
       if issue_num > 0
         brainRemoveId "today", issue_num
         brainRemoveId "plan", issue_num
