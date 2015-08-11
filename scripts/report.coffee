@@ -25,7 +25,7 @@ module.exports = (robot) ->
     o
 
 
-  send_repot = ->
+  report = ->
     today_task = parse_data brainGet("today"), (value) ->
       "  ・" + value.split("|")[1]
     problems = parse_data brainGet("problem"), (value) ->
@@ -36,8 +36,6 @@ module.exports = (robot) ->
       "  ・" + value.split("|")[1]
     plans_text = ""
     plans_text = "ー明日の予定：\n" + plans.join("\n") if plans.length > 0
-    # remove issue closed
-    robot.brain.set "problem", null
     """
 今日の日報です。
 ー進捗：
@@ -46,6 +44,11 @@ module.exports = (robot) ->
 #{problems.join("\n")}
 #{plans_text}
 """
+
+  send_report = ->
+    report_text = report()
+    robot.brain.set "problem", null
+    report_text
 
   brainGet = (key) ->
     data = robot.brain.get key
@@ -64,14 +67,17 @@ module.exports = (robot) ->
 
   brainRemove = (key, value) ->
     collection = brainGet(key)
+    removed = []
     while (i = collection.indexOf(value)) >= 0
-      collection.splice(i, 1)
+      removed = collection.splice(i, 1)
     brainSet key, collection
+    removed[0]
 
   brainRemoveIndex = (key, index) ->
     collection = parse_data brainGet(key)
-    collection.splice(index, 1)
+    removed = collection.splice(index, 1)
     brainSet key, collection
+    removed[0]
 
   brainRemoveId = (key, id) ->
     id = parseInt id
@@ -81,7 +87,7 @@ module.exports = (robot) ->
     brainRemove key, data[0] if data.length > 0
 
   task = new cronJob QUITTING_TIME, ->
-    robot.messageRoom room, send_repot()
+    robot.messageRoom room, send_report()
   , null, true, TIMEZONE
 
   robot.hear /github\.com\/[^\/]+\/[^\/]+\/issues\/([0-9]+)/i, (msg) ->
@@ -131,32 +137,27 @@ module.exports = (robot) ->
     msg.reply "Problem #{msg.match[2]} added"
 
   robot.respond /debug/i, (msg) ->
-    msg.reply "today: " + robot.brain.get "today" + "\n" +
-    "today_added: " + robot.brain.get "today_added" + "\n" +
-    "problem: " + robot.brain.get "problem" + "\n" +
-    "plan: " + robot.brain.get "plan"
+    msg.reply """
+today: #{robot.brain.get "today"}
+today_added: #{robot.brain.get "today_added"}
+problem: #{robot.brain.get "problem"}
+plan: #{robot.brain.get "plan"}
+"""
 
   robot.respond /scheduler/i, (res) ->
-    today_task = parse_data brainGet("today"), (value) ->
-      "  ・" + value.split("|")[1]
-    problems = parse_data brainGet("problem"), (value) ->
-      "  ・" + value
-    plans = parse_data brainGet("plan"), (value) ->
-      "  ・" + value
-    res.reply "Today:\n" + today_task.join("\n") + "\n" +
-    "Problem:\n" + problems.join("\n") + "\n" +
-    "Plan:\n" + plans.join("\n")
+    res.reply report()
 
   robot.respond /send report/i, (res) ->
-    res.reply send_repot()
+    res.reply send_report()
 
   robot.respond /remove ([^\s]+) (.+)/i, (res) ->
     index = res.match[2]
+    removed = ""
     if isNaN(index)
-      brainRemove res.match[1], res.match[2]
+      removed = brainRemove res.match[1], res.match[2]
     else
-      brainRemoveIndex res.match[1], parseInt index
-    res.reply "Removed #{res.match[2]} from #{res.match[1]}"
+      removed = brainRemoveIndex res.match[1], parseInt index
+    res.reply "Removed \"#{removed}\" from #{res.match[1]}"
 
   robot.respond /clear/i, (res) ->
     robot.brain.set "problem", null
@@ -164,3 +165,10 @@ module.exports = (robot) ->
     robot.brain.set "today_added", null
     robot.brain.set "plan", null
     res.reply "Data cleared"
+
+  robot.respond /add ([^\s]+) (.+)/i, (res) ->
+    if res.match[1] == "today" || res.match[1] == "plan"
+      brainAdd res.match[1], "-1|#{res.match[2]}"
+    else
+      brainAdd res.match[1], res.match[2]
+    res.reply "Added \"#{res.match[2]}\" to #{res.match[1]}"
