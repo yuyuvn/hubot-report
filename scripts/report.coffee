@@ -128,13 +128,13 @@ module.exports = (robot) ->
 
   robot.respond /(problem:|問題：)\s*(.*)/i, (msg) ->
     brainAdd "problem", msg.match[2]
-    msg.send "Problem #{msg.match[2]} added"
+    msg.reply "Problem #{msg.match[2]} added"
 
   robot.respond /debug/i, (msg) ->
-    msg.send "today: " + robot.brain.get "today"
-    msg.send "today_added: " + robot.brain.get "today_added"
-    msg.send "problem: " + robot.brain.get "problem"
-    msg.send "plan: " + robot.brain.get "plan"
+    msg.reply "today: " + robot.brain.get "today" + "\n" +
+    "today_added: " + robot.brain.get "today_added" + "\n" +
+    "problem: " + robot.brain.get "problem" + "\n" +
+    "plan: " + robot.brain.get "plan"
 
   robot.respond /scheduler/i, (res) ->
     today_task = parse_data brainGet("today"), (value) ->
@@ -143,12 +143,12 @@ module.exports = (robot) ->
       "  ・" + value
     plans = parse_data brainGet("plan"), (value) ->
       "  ・" + value
-    res.send "Today:\n" + today_task.join("\n")
-    res.send "Problem:\n" + problems.join("\n")
-    res.send "Plan:\n" + plans.join("\n")
+    res.reply "Today:\n" + today_task.join("\n") + "\n" +
+    "Problem:\n" + problems.join("\n") + "\n" +
+    "Plan:\n" + plans.join("\n")
 
   robot.respond /send report/i, (res) ->
-    res.send send_repot()
+    res.reply send_repot()
 
   robot.respond /remove ([^\s]+) (.+)/i, (res) ->
     index = res.match[2]
@@ -156,11 +156,11 @@ module.exports = (robot) ->
       brainRemove res.match[1], res.match[2]
     else
       brainRemoveIndex res.match[1], parseInt index
-    res.send "Removed #{res.match[2]} from #{res.match[1]}"
+    res.reply "Removed #{res.match[2]} from #{res.match[1]}"
 
   robot.respond /clear/i, (res) ->
     robot.brain.set "problem", null
     robot.brain.set "today", null
     robot.brain.set "today_added", null
     robot.brain.set "plan", null
-    res.send "Data cleared"
+    res.reply "Data cleared"
