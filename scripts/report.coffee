@@ -24,6 +24,19 @@ module.exports = (robot) ->
       o = zero_callback()
     o
 
+  check_list = (type, custom_condition) ->
+    if !custom_condition
+      custom_condition = (issue, value) ->
+        issue.state != "open" ||
+          (issue.assignee && issue.assignee.login != username)
+
+    list = brainGet type
+    for value in list
+      issue_num = parseInt value.split("|")[0]
+      break if issue_num < 0
+      github.get "#{project_url}/issues/#{issue_num}", (issue) ->
+        if custom_condition(issue,value)
+          brainRemove type, value
 
   report = ->
     today_task = parse_data brainGet("today"), (value) ->
@@ -46,8 +59,15 @@ module.exports = (robot) ->
 """
 
   send_report = ->
+    # before-process
+    check_list("plan")
+
     report_text = report()
+
+    # after-process
     robot.brain.set "problem", null
+    robot.brain.set "today", robot.brain.get "plan"
+
     report_text
 
   brainGet = (key) ->
@@ -86,6 +106,13 @@ module.exports = (robot) ->
       id == parseInt value.split("|")[0]
     brainRemove key, data[0] if data.length > 0
 
+  brainGetId = (key, id) ->
+    id = parseInt id
+    collection = brainGet(key)
+    data = collection.filter (value) ->
+      id == parseInt value.split("|")[0]
+    data[0]
+
   task = new cronJob QUITTING_TIME, ->
     robot.messageRoom room, send_report()
   , null, true, TIMEZONE
@@ -96,15 +123,11 @@ module.exports = (robot) ->
       if issue.assignee.login != username
         return
 
-      added = brainGet("today_added").filter (value) ->
-        issue_num == parseInt value
-      if added.length > 0
-        return
+      return if brainGetId("today", issue_num)
 
-      brainAdd "today", "#{issue_num}|#{issue.title}"
-      brainAdd "plan", "#{issue_num}|#{issue.title}"
-      if (issue.state != "open")
-        brainRemoveId "plan", issue_num
+      if (issue.state == "open")
+        brainAdd "today", "#{issue_num}|#{issue.title}"
+        brainAdd "plan", "#{issue_num}|#{issue.title}"
 
   robot.hear /github\.com\/[^\/]+\/[^\/]+\/pull\/([0-9]+)/i, (msg) ->
     pull_num = parseInt msg.match[1]
@@ -123,14 +146,12 @@ module.exports = (robot) ->
       if issue_num > 0
         brainRemoveId "today", issue_num
         brainRemoveId "plan", issue_num
-        brainAdd "today_added", issue_num
       else
         issue_num = pull_num
 
       if (pull.state == "open")
-        brainAdd "today", "#{pull_num}|#{pull.title}"
-      if (pull.state != "open")
-        brainRemoveId "plan", issue_num
+        brainAdd "today", "#{issue_num}|#{pull.title}"
+        brainAdd "plan", "#{issue_num}|#{pull.title}"
 
   robot.respond /(problem:|問題：)\s*(.*)/i, (msg) ->
     brainAdd "problem", msg.match[2]
@@ -139,7 +160,6 @@ module.exports = (robot) ->
   robot.respond /debug/i, (msg) ->
     msg.reply """
 today: #{robot.brain.get "today"}
-today_added: #{robot.brain.get "today_added"}
 problem: #{robot.brain.get "problem"}
 plan: #{robot.brain.get "plan"}
 """
@@ -162,7 +182,6 @@ plan: #{robot.brain.get "plan"}
   robot.respond /clear/i, (res) ->
     robot.brain.set "problem", null
     robot.brain.set "today", null
-    robot.brain.set "today_added", null
     robot.brain.set "plan", null
     res.reply "Data cleared"
 
