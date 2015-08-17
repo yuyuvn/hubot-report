@@ -1,5 +1,6 @@
 TIMEZONE = "Asia/Bangkok"
 QUITTING_TIME = if process.env.REPORT_TIME then process.env.REPORT_TIME else '0 0 18 * * 1-5'
+STARTING_TIME = if process.env.START_TIME then process.env.START_TIME else '0 0 7 * * 1-5'
 # QUITTING_TIME = '0 * * * * *'
 
 cronJob = require('cron').CronJob
@@ -64,10 +65,6 @@ module.exports = (robot) ->
 
     report_text = report()
 
-    # after-process
-    robot.brain.set "problem", null
-    robot.brain.set "today", robot.brain.get "plan"
-
     report_text
 
   brainGet = (key) ->
@@ -115,6 +112,12 @@ module.exports = (robot) ->
 
   task = new cronJob QUITTING_TIME, ->
     robot.messageRoom room, send_report()
+  , null, true, TIMEZONE
+
+  task = new cronJob STARTING_TIME, ->
+    check_list("plan")
+    robot.brain.set "problem", null
+    robot.brain.set "today", robot.brain.get "plan"
   , null, true, TIMEZONE
 
   robot.hear /github\.com\/[^\/]+\/[^\/]+\/issues\/([0-9]+)/i, (msg) ->
