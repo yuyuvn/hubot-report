@@ -42,6 +42,8 @@ module.exports = (robot) ->
   report = ->
     today_task = parse_data brainGet("today"), (value) ->
       "  ・" + value.split("|")[1]
+    today_task_english = parse_data brainGet("today"), (value) ->
+      "  ・" + value.split("|")[2]
     problems = parse_data brainGet("problem"), (value) ->
       "  ・" + value
     , ->
@@ -50,13 +52,20 @@ module.exports = (robot) ->
       "  ・" + value.split("|")[1]
     plans_text = ""
     plans_text = "ー明日の予定：\n" + plans.join("\n") if plans.length > 0
+    plans_english = parse_data brainGet("plan"), (value) ->
+      "  ・" + value.split("|")[2]
+    plans_text_english = ""
+    plans_text_english = "---\n" + plans_english.join("\n") if plans_english.length > 0
     """
 今日の日報です。
 ー進捗：
 #{today_task.join("\n")}
+---
+#{today_task_english.join("\n")}
 ー問題点：
 #{problems.join("\n")}
 #{plans_text}
+#{plans_text_english}
 """
 
   send_report = ->
@@ -128,9 +137,12 @@ module.exports = (robot) ->
 
       return if brainGetId("today", issue_num)
 
+      # find english translation
+      english = if m = pull.body.match(/\*\[(.+)\]\*/) then m[1] else ""
+
       if (issue.state == "open")
-        brainAdd "today", "#{issue_num}|#{issue.title}"
-        brainAdd "plan", "#{issue_num}|#{issue.title}"
+        brainAdd "today", "#{issue_num}|#{issue.title}|#{english}"
+        brainAdd "plan", "#{issue_num}|#{issue.title}|#{english}"
 
   robot.hear /github\.com\/[^\/]+\/[^\/]+\/pull\/([0-9]+)/i, (msg) ->
     pull_num = parseInt msg.match[1]
@@ -152,9 +164,12 @@ module.exports = (robot) ->
       else
         issue_num = pull_num
 
+      # find english translation
+      english = if m = pull.body.match(/\*\[(.+)\]\*/) then m[1] else ""
+
       if (pull.state == "open")
-        brainAdd "today", "#{issue_num}|#{pull.title}"
-        brainAdd "plan", "#{issue_num}|#{pull.title}"
+        brainAdd "today", "#{issue_num}|#{pull.title}|#{english}"
+        brainAdd "plan", "#{issue_num}|#{pull.title}|#{english}"
 
   robot.respond /(problem:|問題：)\s*(.*)/i, (msg) ->
     brainAdd "problem", msg.match[2]
