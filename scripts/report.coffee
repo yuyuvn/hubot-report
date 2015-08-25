@@ -114,7 +114,7 @@ module.exports = (robot) ->
     robot.messageRoom room, send_report()
   , null, true, TIMEZONE
 
-  task = new cronJob STARTING_TIME, ->
+  task2 = new cronJob STARTING_TIME, ->
     check_list("plan")
     robot.brain.set "problem", null
     robot.brain.set "today", robot.brain.get "plan"
