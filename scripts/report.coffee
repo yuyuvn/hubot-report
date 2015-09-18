@@ -2,6 +2,7 @@ TIMEZONE = "Asia/Bangkok"
 QUITTING_TIME = if process.env.REPORT_TIME then process.env.REPORT_TIME else '0 0 18 * * 1-5'
 STARTING_TIME = if process.env.START_TIME then process.env.START_TIME else '0 0 7 * * 1-5'
 # QUITTING_TIME = '0 * * * * *'
+ENGLISH_MODE = process.env.EMODE
 
 cronJob = require('cron').CronJob
 
@@ -56,16 +57,15 @@ module.exports = (robot) ->
       "  ・" + value.split("|")[2]
     plans_text_english = ""
     plans_text_english = "---\n" + plans_english.join("\n") if plans_english.length > 0
+    etask = if ENGLISH_MODE then "\n---\n#{today_task_english.join("\n")}" else ""
+    eplans = if ENGLISH_MODE then "\n#{plans_text_english}" else ""
     """
 今日の日報です。
 ー進捗：
-#{today_task.join("\n")}
----
-#{today_task_english.join("\n")}
+#{today_task.join("\n")}#{etask}
 ー問題点：
 #{problems.join("\n")}
-#{plans_text}
-#{plans_text_english}
+#{plans_text}#{eplans}
 """
 
   send_report = ->
