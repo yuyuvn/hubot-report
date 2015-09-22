@@ -135,10 +135,11 @@ module.exports = (robot) ->
       if issue.assignee.login != username
         return
 
-      return if brainGetId("today", issue_num)
+      id = brainGetId("today", issue_num)
+      return if id?
 
       # find english translation
-      english = if m = pull.body.match(/\*\[(.+)\]\*/) then m[1] else ""
+      english = if m = issue.body.match(/\*\[(.+)\]\*/) then m[1] else ""
 
       if (issue.state == "open")
         brainAdd "today", "#{issue_num}|#{issue.title}|#{english}"
