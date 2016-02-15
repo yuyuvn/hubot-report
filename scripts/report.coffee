@@ -79,12 +79,12 @@ module.exports = (robot) ->
   brainGet = (key) ->
     data = robot.brain.get key
     if data?
-      data.split('||')
+      data.split('@@')
     else
       []
 
   brainSet = (key, value) ->
-    robot.brain.set key, value.join('||')
+    robot.brain.set key, value.join('@@')
 
   brainAdd = (key, value) ->
     collection = brainGet(key)
