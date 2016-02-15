@@ -210,3 +210,27 @@ plan: #{robot.brain.get "plan"}
     else
       brainAdd res.match[1], res.match[2]
     res.reply "Added \"#{res.match[2]}\" to #{res.match[1]}"
+
+  robot.respond /help/i, (msg) ->
+    msg.reply """
+debug
+Show all data
+
+clear
+Clear all data
+
+add [today|problem|plan] <content>
+Add data
+
+help
+Show all command
+
+send report
+Send report in develop room
+
+scheduler
+Show report in test room
+
+problem: <content>
+Add problem
+"""
