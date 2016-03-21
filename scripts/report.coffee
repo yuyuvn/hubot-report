@@ -1,4 +1,5 @@
 TIMEZONE = "Asia/Bangkok"
+ACTIVE = process.env.ACTIVE
 QUITTING_TIME = if process.env.REPORT_TIME then process.env.REPORT_TIME else '0 0 18 * * 1-5'
 STARTING_TIME = if process.env.START_TIME then process.env.START_TIME else '0 0 7 * * 1-5'
 # QUITTING_TIME = '0 * * * * *'
@@ -120,7 +121,8 @@ module.exports = (robot) ->
     data[0]
 
   task = new cronJob QUITTING_TIME, ->
-    robot.messageRoom room, send_report()
+    if ACTIVE
+      robot.messageRoom room, send_report()
   , null, true, TIMEZONE
 
   task2 = new cronJob STARTING_TIME, ->
