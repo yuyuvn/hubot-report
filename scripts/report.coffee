@@ -1,12 +1,3 @@
-TIMEZONE = "Asia/Bangkok"
-ACTIVE = process.env.ACTIVE
-QUITTING_TIME = if process.env.REPORT_TIME then process.env.REPORT_TIME else '0 0 18 * * 1-5'
-STARTING_TIME = if process.env.START_TIME then process.env.START_TIME else '0 0 7 * * 1-5'
-# QUITTING_TIME = '0 * * * * *'
-ENGLISH_MODE = process.env.EMODE
-
-cronJob = require('cron').CronJob
-
 module.exports = (robot) ->
   github = require("githubot")(robot)
 
@@ -44,8 +35,6 @@ module.exports = (robot) ->
   report = ->
     today_task = parse_data brainGet("today"), (value) ->
       "  ・" + value.split("|")[1]
-    today_task_english = parse_data brainGet("today"), (value) ->
-      "  ・" + value.split("|")[2]
     problems = parse_data brainGet("problem"), (value) ->
       "  ・" + value
     , ->
@@ -54,19 +43,13 @@ module.exports = (robot) ->
       "  ・" + value.split("|")[1]
     plans_text = ""
     plans_text = "ー明日の予定：\n" + plans.join("\n") if plans.length > 0
-    plans_english = parse_data brainGet("plan"), (value) ->
-      "  ・" + value.split("|")[2]
-    plans_text_english = ""
-    plans_text_english = "---\n" + plans_english.join("\n") if plans_english.length > 0
-    etask = if ENGLISH_MODE then "\n---\n#{today_task_english.join("\n")}" else ""
-    eplans = if ENGLISH_MODE then "\n#{plans_text_english}" else ""
     """
 今日の日報です。
 ー進捗：
-#{today_task.join("\n")}#{etask}
+#{today_task.join("\n")}
 ー問題点：
 #{problems.join("\n")}
-#{plans_text}#{eplans}
+#{plans_text}
 """
 
   send_report = ->
@@ -120,16 +103,23 @@ module.exports = (robot) ->
       id == parseInt value.split("|")[0]
     data[0]
 
-  task = new cronJob QUITTING_TIME, ->
-    if ACTIVE
-      robot.messageRoom room, send_report()
-  , null, true, TIMEZONE
+  robot.respond /I go home/i, (msg) ->
+    robot.brain.set "status", "pre_report"
 
-  task2 = new cronJob STARTING_TIME, ->
-    check_list("plan")
-    robot.brain.set "problem", null
-    robot.brain.set "today", robot.brain.get "plan"
-  , null, true, TIMEZONE
+  robot.respond /I just arrived home/i, (msg) ->
+    if robot.brain.get("status") == "pre_report"
+      robot.messageRoom room, send_report()
+      robot.brain.set "status", "rest"
+
+  robot.respond /I leave home/i, (msg) ->
+    robot.brain.set "status", "pre_new_day"
+
+  robot.respond /I just arrived company/i, (msg) ->
+    if robot.brain.get("status") == "pre_new_day"
+      check_list("plan")
+      robot.brain.set "problem", null
+      robot.brain.set "today", robot.brain.get "plan"
+      robot.brain.set "status", "working"
 
   robot.hear /github\.com\/[^\/]+\/[^\/]+\/issues\/([0-9]+)/i, (msg) ->
     issue_num = parseInt msg.match[1]

@@ -8,9 +8,8 @@ HUBOT_CHATWORK_API_RATE="350"    # request per hour
 
 HUBOT_GITHUB_TOKEN="ABCDEFGH" # see https://github.com/settings/tokens
 
-REDIS_URL="redis://password@server.url:port/prefix # redis server, default is localhost
+ORCHESTRATE_API_KEY="[your_orchestrate_token]"
 
-REPORT_TIME="0 0 18 * * 2-6" # Time to post report (timezone is Asia/Bangkok)
 PROJECT_URL="https://api.github.com/repos/origanization/project_name" # api link to project
 USERNAME="username" # your github username
 ROOM="123" # room to post report

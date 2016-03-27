@@ -1,5 +1,5 @@
 [
   "hubot-diagnostics",
   "hubot-heroku-keepalive",
-  "hubot-redis-brain"
+  "orchestrate-brain"
 ]
